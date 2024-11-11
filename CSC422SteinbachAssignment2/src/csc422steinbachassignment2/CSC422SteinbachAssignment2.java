@@ -60,6 +60,7 @@ public class CSC422SteinbachAssignment2 {
         try(PrintWriter outFS = new PrintWriter(new FileOutputStream(fileName))){
             pets.forEach( (n) -> {outFS.println(n.getName() + " " + n.getAge());});
             outFS.close();
+            System.out.println("Goodbye!");
         }
         catch (FileNotFoundException e) {
             System.out.println("Cannot find " + fileName);
@@ -74,6 +75,9 @@ public class CSC422SteinbachAssignment2 {
         System.out.println("Enter \"done\" when finished");
         while(true) {
             try {
+                if (pets.size() >= 5) {
+                    throw new FullDatabaseException(21);
+                }
                 Pet pet = new Pet();
                 System.out.println("add pet (name, age):");
 
@@ -81,7 +85,15 @@ public class CSC422SteinbachAssignment2 {
                 String[] inputArray = input.split(" ");
                 name = inputArray[0];
                 if (!name.equalsIgnoreCase("done")) {
+                    if (inputArray.length != 2) {
+                        throw new InvalidInputException(inputArray);
+                    }
+                    
                     age = Integer.parseInt(inputArray[1]);
+                    
+                    if (age < 1 || age > 20) {
+                        throw new InvalidAgeException(age);
+                    }
                     pet.setName(name);
                     pet.setAge(age);
                     pets.add(pet);
@@ -90,8 +102,18 @@ public class CSC422SteinbachAssignment2 {
                     break;
                 }
             }
-            catch(NumberFormatException | IndexOutOfBoundsException e) {
+            catch(NumberFormatException e) {
                 System.out.println(e);
+            }
+            catch(InvalidInputException e) {
+                System.out.println("ERROR: " + e.input + "is not a valid input.");
+            }
+            catch(FullDatabaseException e){
+                System.out.println("ERROR: Database is full.");
+                break;
+            }
+            catch(InvalidAgeException e) {
+                System.out.println("ERROR: " + e.age + " is not a valid age.");
             }
            
         }
@@ -142,7 +164,12 @@ public class CSC422SteinbachAssignment2 {
             
             printPets(pets);
             System.out.println("Enter the pet ID you want to update: ");
-            petUpdate = pets.get(scnr.nextInt());
+            int id = scnr.nextInt();
+            if (id < 0 || id >= pets.size()) {
+                throw new InvalidIDException(id);
+            }
+            petUpdate = pets.get(id);
+            
             System.out.println("Enter new name and new age: ");
             
             scnr.nextLine();
@@ -163,17 +190,23 @@ public class CSC422SteinbachAssignment2 {
         catch(IndexOutOfBoundsException | NumberFormatException e) {
             System.out.println(e);
         }
+        catch(InvalidIDException e) {
+            System.out.println("ERROR: ID " + e.ID + " does not exist.");
+        }
     }
     
     static void removePet(ArrayList<Pet> pets, Scanner scnr) {
         try {
             Pet petRemove;
-            int input;
+            int id;
             printPets(pets);
             System.out.println("Enter the pet ID you want to remove: ");
-            input = scnr.nextInt();
-            petRemove = pets.get(input);
-            pets.remove(input);
+            id = scnr.nextInt();
+            if (id < 0 || id >= pets.size()) {
+                throw new InvalidIDException(id);
+            }
+            petRemove = pets.get(id);
+            pets.remove(id);
             System.out.println(petRemove + " is removed");
         }
         catch(InputMismatchException e) {
@@ -182,6 +215,9 @@ public class CSC422SteinbachAssignment2 {
         }
         catch(IndexOutOfBoundsException e) {
             System.out.println(e);
+        }
+        catch(InvalidIDException e) {
+            System.out.println("ERROR: ID " + e.ID + " does not exist.");
         }
     }
     
@@ -229,6 +265,39 @@ public class CSC422SteinbachAssignment2 {
             }
         }
         
+    }
+    
+    //Exceptions
+    static class FullDatabaseException extends Exception{
+        public FullDatabaseException(int msg) {
+            super("Capacity reached. " + msg + " is too many animals.");
+        }
+    }
+    
+    static class InvalidAgeException extends Exception{
+        public int age;
+        public InvalidAgeException(int msg) {
+            super("Age " + msg + " is too old.");
+            age = msg;
+        }
+    }
+    
+    static class InvalidInputException extends Exception{
+        public String input = "";
+        public InvalidInputException(String[] msg) {
+            super(msg + "is not a valid input.");
+            for (int i = 0; i < msg.length; i++) {
+                input += msg[i] + " ";
+            }
+        }
+    }
+    
+    static class InvalidIDException extends Exception{
+        public int ID;
+        public InvalidIDException(int msg) {
+            super("ID " + msg + " does not exist.");
+            ID = msg;
+        }
     }
     
 }
